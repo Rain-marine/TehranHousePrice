@@ -1,0 +1,719 @@
+---
+title: "Statistics & Application Course Project"
+author: "Zahra Sadat Bahri"
+output:
+  html_document: default
+  pdf_document: default
+---
+# Question 1
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(lemon) #to print dfs in a pretty way
+knit_print.data.frame <- lemon_print
+```
+
+## Part A: 
+### i) An exponential distribution with $\lambda = 2$
+
+Exponential distribution describes times between events happening at constant rate λ with expected value 1/λ
+
+Here, imagine its the day of judgment and corpses are waking up, and on average, every half second one of them rises. Assume a corpse wakes up and let $t$ be the times passed until the next one's resurrection. The area of the plot between $x$ and $x+dx$ is the probability of $t \in \{x , x+dx\}$. 
+
+PDF of $y = \lambda e ^{-\lambda x} \rightarrow Variance = \frac{1}{\lambda^2} = 0.25 , \mu = 0.5$
+
+
+```{r}
+# Grid of X-axis values
+x <- seq(0, 10, 0.01)
+
+# lambda = 2
+plot(x, dexp(x, 2), type = "l",
+     ylab = "Y",xlab = "X", lwd = 3, col = "purple")
+
+# Adding a legend
+legend("topright", c(expression(paste(, lambda)), "2"),
+       lty = c(0, 1), col = c("purple"), box.lty = 4, lwd = 3)
+
+```
+
+### ii & iii) Doing n experiments with 50 samples
+
+For part iii note that the standard deviation of the normal curve is $ \frac{\sigma}{n} \rightarrow \sigma_{CLT}=\frac{1}{\sqrt{4n}}$
+
+
+```{r}
+
+#define function: takes n as input, 
+                  # for n times, gets 50 random uniform samples, calculates the mean, adds it to a vector
+                  #draws the histogram
+
+calc_mean <- function(n) {
+  samp = 50 #in case someone wants to change it
+  means_vec = c()
+  
+  for (i in 1:n) {
+    x <- rexp(samp, 2)
+    single_mean = mean(x)
+    means_vec = c(means_vec, single_mean)
+  }
+  
+  
+  print(paste("The Sample Statistics After " , n , " Experiments: Mean = " , round(mean(means_vec),4) , " ,Variance = ", round(var(means_vec),4)))
+
+  cltvar = round(1 / sqrt(4 * n), 4)
+  
+  print(paste("using CLT the normal distribution properties are: mean = 1 ,variance=", cltvar))
+  
+  
+  
+  # plot the histogram
+  hist(means_vec,prob = T, main = paste('No. of Experiments = ', n), xlim = c(0, 1), xlab = 'X', ylab = 'Y', col="purple")
+  
+  # fit a normal curve to the histogram
+  lines(density(means_vec), col="magenta", lwd=3) # add a density estimate with defaults
+  lines(density(means_vec, adjust=2), lty="dashed", col="darkblue", lwd=3) 
+  
+  
+  #draw the CLT curve for distribution of mean:
+  x_dt <- seq(0, 10, 0.01)
+  y_dt <- dnorm(x_dt, 0.5, 1 /(2* sqrt(n)))
+  
+  # plotting the normal distribution
+  lines(x_dt, y_dt, type = 'l', col = 'red', lwd = 2.5, xlab = 'X', ylab = 'Y', xlim = c(0,1))
+  
+  
+# Adding a legend
+legend("topright", c("fit normal", "real curve", "CLT" ),
+       lty = c(2, 1,1), col = c("darkblue","magenta", "red"), box.lty = 4, lwd = 3)
+
+
+
+}
+
+
+
+```
+
+Doing 10 experiments: n = 10
+
+```{r}
+calc_mean(10)
+
+```
+
+Doing 100 experiments: $ n = 100$
+
+```{r}
+calc_mean(100)
+
+```
+
+Doing 1000 experiments: $ n = 1000$
+
+```{r}
+calc_mean(1000)
+```
+
+**Conclusion:**
+By increasing the number of experiments the variance of the curve decreases.
+
+As it can be seen, the histograms approach to a normal curve by increasing the samples. Also the mean is around 0.5 which is exactly the mean of the distribution we're taking samples from. In plots the red line shows the Normal distribution which CLT results in, and the dashed blue curve is the normal fit function that we have obtained from the data. By increasing the number of experiments  these two, get closer and closer to each other and the mean of samples approaches the actual mean.
+
+
+## Part B:
+
+### i)  days with min and max birth
+
+```{r, include=FALSE}
+
+#loading the data set
+library(fastR2)
+
+```
+
+#### The day with minimum number of births: 
+```{r, render=lemon_print}
+
+head(filter(Births, `births` == min(births))['date'])
+```
+
+
+#### The day with maximum number of births: 
+```{r, render=lemon_print}
+
+head(filter(Births, `births` == max(births))['date'])
+```
+
+
+### ii) average of each month
+
+Not Sorted:
+
+```{r,render=lemon_print}
+
+mon_avg = summarize(group_by(Births, month), average = mean(births))
+head(mon_avg,'all')
+```
+
+Sorted (Descending):
+
+```{r,render=lemon_print}
+#order = avg
+sorted <- mon_avg[order(-mon_avg$average),]
+head(sorted, 'all')
+```
+### iii) Average of each year
+
+```{r,render=lemon_print}
+#order = avg of each year
+yavg = summarize(group_by(Births, year), average = mean(births))
+head(yavg, 'all')
+
+#plotting 
+barplot(names = yavg$year, height = yavg$average,col="purple")
+```
+
+## Part C:
+
+```{r, echo=FALSE,include=FALSE}
+library(dplyr)
+library(ggplot2)
+```
+```{r}
+
+#sort: most recent on top:
+write.csv(storms[order(-storms$year,-storms$month,-storms$day,-storms$hour),], file = 'storm_reports.csv')
+
+
+# plot
+sp = ggplot(storms, aes(x = long, y = lat, colour = status)) + geom_point()
+sp + scale_color_manual(values=c("darkorchid1", "gold", "darkmagenta"))
+
+
+```
+```{r, include=FALSE}
+library(ggmap)
+```
+
+
+Here is the data shown on a real map:
+
+```{r}
+
+#set borders of the map (5 is the margin so dots won't end up on the border of the picture)
+
+border <- c(
+  left = min(storms$long)-5,
+  bottom = min(storms$lat)-5,
+  right = max(storms$long)+5,
+  top = max(storms$lat)+5
+)
+
+#get map image
+
+map <- get_stamenmap(
+  bbox = border,
+  zoom = 5
+)
+
+ggmap(map)+
+geom_point(
+    data = storms,
+    mapping = aes(x = long, y = lat, color = status)
+    , size = 0.75
+  ) + scale_color_manual(values=c("red", "gold", "darkmagenta"))
+
+
+```
+
+# Question 2
+
+## Part A: 
+
+### i) Importing the data 
+```{r,render=lemon_print}
+#loading data
+df = read.delim("had.txt")
+
+#set column names
+colnames(df) = c('age', 'sex', 'pain', 'blood_pressure', 'cholesterol', 'boold_sugar', 'heart_attack')
+
+features = df[,c('age', 'sex', 'pain', 'blood_pressure', 'cholesterol', 'boold_sugar')]
+label = df[c('heart_attack')]
+head(features,'all')
+
+```
+### ii) Split into "test" and "train"
+
+```{r}
+
+set.seed(13) 
+#how many is is 80% of data?
+n =  floor(.8 * nrow(df))
+
+```
+
+Getting n random rows by generating n random numbers
+```{r}
+
+random = sample.int(n = nrow(df), size =n, replace = F)
+
+# split label
+train_label = label[random, ]
+test_label = label[-random, ]
+
+#split feature:
+train_feature = features[random, ]
+test_feature  = features[-random, ]
+
+
+```
+saving data frames into txt files
+```{r}
+write.table(train_label,"train_label.txt",sep="\t",row.names=FALSE)
+
+write.table(test_label,"test_label.txt",sep="\t",row.names=FALSE)
+
+write.table(train_feature,"train_feature.txt",sep="\t",row.names=FALSE)
+
+write.table(test_feature,"test_feature.txt",sep="\t",row.names=FALSE)
+
+```
+
+## Part B:
+
+### i) 
+
+Extracting the 80% of data to fit a line to:
+
+```{r}
+reg <- lm(heart_attack ~ age + sex + pain+ blood_pressure+cholesterol+ boold_sugar, df[random, ])
+
+```
+
+```{r}
+summary(reg)
+```
+#### Coefficients, Standard deviation, t-value, Residuals, Residual standard error, Multiple R-squared, F-statistic and R-squared is given
+
+As we can see, all the coefficients (including the intercept) are given **plus** each one's standard deviation and t-value. (Recall that standard deviation can be used to estimate confidence intervals and t-value is useful for figuring out whether the related variable which the coefficient belongs to, has a meaningful regression with y axis variable.)
+
+When the coefficients are calculated and the line is drawn, each point has a distance from it. If the regression is meaningful and the real realation between data is linear, then points are expected to be close to this line. Residual is defined as the difference between the observed value and the mean value that the model predicts for that observation. Residual values are especially useful in regression and ANOVA procedures because they indicate the extent to which a model accounts for the variation in the observed data.
+
+$$ r = x - x_0 $$
+where x is the measured variable and $x_0$ is the approximate variable.
+
+Here we have minimum and maximum residual in addition to median, 1Q and 3Q. Note that for min and max residua, they don't need to be necessarily close to 0 for regression to be good, since they can be literally the outliers.
+
+R-squared ($R^2$) is a statistical measure that represents the proportion of the variance for a dependent variable that's explained by an independent variable or variables in a regression model.
+
+$$R^2 = 1- \frac{RSS}{TSS} $$
+where 
+$R^2$	=	coefficient of determination, 
+RSS	=	sum of squares of residuals,
+and TSS	=	total sum of squares,
+
+
+### iii) What parameters are the most and the least related?
+
+First of all **do NOT use the (absolute) value of the coefficients** since that largely depends on units and scaling of the data. If we try to analyze data using coefficients, Sex will be the most effective feature in causing a heart attack (largest absolute value of coefficient) and cholesterol will be the least efficient one (smallest absolute value of coefficient).
+
+However, looking at t-values( ) we see that **pain** is the most related and effective parameter with highest t-value and blood sugar is the least. ( any t-value$\notin [-2, 2]$ is acceptable). The t-value measures the size of the difference relative to the variation in your sample data. Put another way, T is simply the calculated difference represented in units of standard error. The greater the magnitude of T, the greater the evidence against the null hypothesis.
+
+
+## Part C:
+
+### i) Estimation with limit = 0
+
+```{r}
+#using model on test data:
+prdction <- predict.lm(reg, test_feature)
+```
+
+Now we set 1 for "having the heart attack" and -1 for the oppsite to make data comparable to label vector
+```{r}
+# < 0 => no heart attack
+prdction[prdction < 0] = -1
+
+# > 0 => had a heart attack
+prdction[prdction >= 0] = 1
+
+# calculating the ratio:
+rrr = sum(abs(prdction - test_label))
+ratio = (length(prdction) - rrr / 2) / length(prdction)
+print(paste(round(ratio*100,2) , "% of the data is predicted correctly"))
+```
+### iii) finding the best limit
+
+We do so by computing accuracy for different limits, and drawing its plot and choosing the peak.
+```{r}
+step = 0.001
+acc = c()
+
+for (lim in seq(-2, 2, step)){
+  
+  # must be estimated each time because the loop changes it.
+  prdction <- predict.lm(reg, test_feature)
+    
+  # < limit => no heart attack
+  prdction[prdction < lim] = -1
+
+  # > limit => had a heart attack
+  prdction[prdction >= lim] = 1
+  
+  rrr = sum(abs(prdction - test_label))
+  ratio = (length(prdction) - rrr / 2) / length(prdction)
+  acc = c(acc, ratio)
+  
+}
+
+acc <- data.frame(limit = seq(-2, 2, step), ratio = acc )
+```
+
+```{r}
+#plotting
+plot(acc$limit, acc$ratio, col = "purple", lty = 1, type = "l", xlab =  'Limit', ylab = 'Correct Predicted Ratio',lwd = 3)
+
+ggplot(data = acc)+geom_point(mapping = aes(x=limit,y=ratio), color = 'magenta4', size = 2)
+
+```
+
+
+To find the best limit we find maximum correct ratio and find the related limit to it
+
+```{r, render= lemon_print}
+best = max(acc$ratio)
+bestdf = acc[which(acc$ratio == best ),]
+head(bestdf,'all')
+
+#choosing maximun one:
+
+print(paste("The best limit is: ", max(bestdf$limit)))
+```
+
+
+# Question 3
+
+
+## Part A: 
+
+The system used to map year works like this: 
+
+$yy.00 = yy = spring$
+
+$yy.25 = summer$
+
+$yy.5 = autumn$
+
+$yy.75 = winter$
+
+```{r}
+#reading data:
+list<- read.csv(file = 'list.csv')
+
+#removing useless parts
+list <- list[-c(1, 2, 3), -1]
+
+#add year to each 4 columns
+colnames(list) <- rev(seq(88, 99, 0.25))
+
+#add district
+rownames(list) <- 1:22
+
+```
+
+### i) Finding cells containing corrupted values:
+
+Useless cells are filled with one of these: 0,-,''(empty!),NaN,or any character other than numbers.
+
+Then we fill all the corrupted values with **NaN** to easily find and replace them in the next part.
+
+```{r}
+
+print("The corrupted values report per column is: ")
+
+#to find out what columns must be removed
+uselesscols = c()
+
+for (col in colnames(list)){
+  
+    corrupt = which(is.na(list[[col]]) |  list[[col]] == '-' |list[[col]] == '0' | list[[col]] == '' | !grepl('^[0-9]', list[[col]]), arr.ind=TRUE)
+    
+    
+    if (length(corrupt) > 0){
+      
+      if (as.numeric(col) %% 1 == 0){
+        season = "spring"
+      }
+      else if (as.numeric(col) %%1  == 0.25){
+        season = "summer"
+      }
+      else if (as.numeric(col) %% 1 == 0.5){
+        season = "autumn"
+      }
+      else{
+          season = "winter"
+
+      }
+      
+      msg = ""
+      
+      if (length(corrupt) > 11){
+        uselesscols = c(uselesscols, col)
+        msg = " More than 50% of data is corrupted "
+      }
+      
+        print(paste("year ",floor(as.numeric(col))," season ", season," had ", length(corrupt), " corrupted values", msg))
+    }
+    
+    
+    list[[col]][corrupt] = NA
+    
+      #convert to numeric to use later
+    list[[col]] = as.numeric(list[[col]])
+    
+}
+
+```
+Now we remove columns with more than 50% of corrupted data and also remove the rest of the corrupted values (that are now "NaN"s). Injecting any thing in place of missing values doesn't seem logical since it's like producing data. So it is best to remove columns with too many missing values (that actually makes the number of data too little to be useful) and ignore the other missing values in order to avoid causing error.
+
+```{r}
+#remove useless columns:
+clean_list <- list[ , -which(names(list) %in% uselesscols)]
+
+##### this part was to replace NaN with median #####
+
+#for (col in colnames(clean_list)) {
+    
+    #med = median(clean_list[[col]], na.rm=TRUE)
+    #clean_list[[col]][is.na(clean_list[[col]])] <- round(med)}
+```
+
+Finally we save the file.
+
+```{r}
+write.csv(clean_list,'clean_list.csv')
+```
+
+## Part B:
+
+### i) Traget district : 1
+```{r}
+k = 98110232 %% 22
+k = k+1
+
+#importing district k+1 data in a separate data
+regdf <- data.frame(as.numeric(colnames(clean_list)), as.numeric(t(clean_list[k,])))
+colnames(regdf) <- c('Year', 'Cost')
+
+reg = lm(Cost ~ Year, regdf)
+summary(reg)
+
+```
+The plot:
+
+```{r}
+
+plot(y = regdf$Cost, x = regdf$Year, ylab = 'Price', xlab = 'Year', col = 'purple', main = paste('Housing Costs for District ', k, ' per Year'), pch=17 , lwd = 2)
+abline(reg, col = 'maroon1', lwd = 2)
+options(scipen=5)
+```
+### ii) Price with respect to district and year
+
+```{r, render=lemon_print}
+
+#import data
+all = data.frame(district = c(0),year =  c(0),cost = c(0))
+
+# copy:
+for (row in rownames(clean_list)) {
+    for (col in colnames(clean_list)) {
+        all[nrow(all) + 1,] = c(as.numeric(row), as.numeric(col), as.numeric(clean_list[row, col]))
+    }
+}
+
+
+# removing the first row which was 0 to initialize the data frame
+all <- all[-1,]
+head(all)
+tail(all)
+```
+Now we find the regression:
+
+```{r}
+reg = lm(cost ~ year + district, all)
+
+summary(reg)
+
+```
+### iii) Finding price as a function of a single district and year (dummy variable)
+
+Here each district is treated as a single independent variable. To do so our data frame must have 23 columns, meaning there is one column for each district except for district 1.Later if all the district columns are 0, we'll know it's because data belongs to district 1.
+
+```{r , render= lemon_print}
+
+
+#import data
+all = data.frame(dist2 = c(0),dist3 = c(0),dist4 = c(0), dist5 = c(0),dist6 = c(0),dist7 =c(0),
+                 dist8 = c(0),dist9 = c(0),dist10 = c(0),
+                 dist11= c(0),dist12 = c(0),dist13 = c(0),dist14 = c(0),dist15 = c(0)
+                 ,dist16 = c(0),dist17 = c(0),dist18 = c(0),dist19= c(0),dist20 = c(0),dist21 = c(0),dist22 = c(0),year =  c(0),cost = c(0))
+
+
+which_dist <- function(dist) {
+    vec = c(rep(0,21))
+    vec[dist-1] <- 1
+    return (vec)
+}
+
+# copy:
+for (row in rownames(clean_list)) {
+    for (col in colnames(clean_list)) {
+      
+      #if the data is for district 1 then add 0 to all district columns
+        if (as.numeric(row) == 1){
+          all[nrow(all) + 1,] = c(c(rep(0,21)), as.numeric(col), as.numeric(clean_list[row, col]))
+        }
+      
+      else{
+        all[nrow(all) + 1,] = c(which_dist(as.numeric(row)), as.numeric(col), as.numeric(clean_list[row, col]))
+      }
+    }
+}
+
+
+
+# removing the first row which was 0 to initialize the data frame
+all <- all[-1,]
+head(all)
+tail(all)
+
+```
+
+
+
+
+```{r}
+reg = lm(cost~. , all)
+
+summary(reg)
+```
+### iv) Which one is better? ii or iii?
+
+District here, is most certainly playing a role but not as a number. In part **ii** we used the number of the district as a real number! meaning for district 22 for example, we set $x = 22$ and for district 3, $x = 3$. Treating this feature (which is a non-numeric factor rather than a real number) this way causes error in calculations. Nevertheless when a data belongs to district $x$ for example, **we know** that for sure, this data cannot belong to any other district, hence, estimating price as a function of *all* districts for a single data is wrong. The order of district numbers may not be fit to order of prices in those. For example assume that typically district 1 is more expensive than district 3 and district 3 is more expensive than district 2, however $ 3  > 2 > 1$  but we had $Price(1) > Price(3) > Price(2) $. This disorderliness effects the linearity and reduces the R-squared value.
+
+This is an intuition on why the estimation in part **iii** is better. Now let's take a look at numbers.
+
+<b> ii) Residual standard error: 50550 on 859 degrees of freedom
+
+	Adjusted R-squared:  0.4801 
+
+
+ iii) Residual standard error: 47720 on 839 degrees of freedom
+ 
+Adjusted R-squared:  0.5366 
+
+</b>
+
+We know the larger the R-squared the better is the model. Also the reduction of Residual standard error shows that the second regression is working better.
+
+## Part C
+
+### i)
+
+```{r}
+k = 98110232 %% 33
+
+print(paste("k =",k))
+```
+season 0 is winter of year 99 $\rightarrow season_0 = 90.75$ 
+
+let's see what are seasons $k$ and $k+1$ (11 and 12)
+
+```{r}
+sea11 = t <- 90.75 + k / 4
+sea12 = sea11 + 0.25
+print(paste("season" , k ,"is", sea11 , "and season", k+1 ,"is", sea12))
+```
+Thus we will be analyzing data of fall and winter of year 93.
+
+Let's calculate mean and variance for each season's price:
+
+```{r}
+
+y_i = clean_list[[as.character(sea12)]]
+
+x_i = clean_list[[as.character(sea11)]] 
+
+print(paste("mean of x_i is", round(mean(x_i),2), "and mean of y_i is",  round(mean(y_i),2)))
+
+print(paste("variance of x_i is" , round(var(x_i),2),"and variance of y_i is" , round(var(y_i),2)))
+
+print(paste("The difference between average price in those seasons is mean(x_i)-mean(y_i) =", round(mean(x_i)-mean(y_i),2)))
+
+```
+and now we compute p-value: 
+$$
+t=\frac{m_{A}-m_{B}}{\sqrt{\frac{S^{2}}{n_{A}}+\frac{S^{2}}{n_{B}}}}
+$$
+where,
+- $m_{A}$ and $m_{B}$ represent the mean value of the group $A$ and $B$, respectively.
+
+- $n_{A}$ and $n_{B}$ represent the sizes of the group $\mathrm{A}$ and $\mathrm{B}$, respectively.
+
+- $S^{2}$ is an estimator of the pooled variance of the two groups. It can be calculated as follow:
+
+$$
+S^{2}=\frac{\sum\left(x-m_{A}\right)^{2}+\sum\left(x-m_{B}\right)^{2}}{n_{A}+n_{B}-2}
+$$
+
+with degrees of freedom (df): $d f=n_{A}+n_{B}-2$.
+
+```{r}
+n = length(x_i)
+m = length(y_i)
+d = (n - 1) * (var(x_i)) + ((m-1)*var(y_i))
+Sp = d*(1/(m+n-2))
+
+denum = sqrt(Sp*2/n)
+t_value = (mean(x_i) - mean(y_i)) / denum
+
+#test = t.test(x_i,y_i)
+#test$p.value
+
+
+p_value = pt(q = t_value, df = n+ m - 2)
+
+print(paste("p_value =", round(p_value,5)))
+```
+Assuming a threshold of $0.05$ for $P_{value}$ we fail to reject to null hypothesis since $P_{value} > 0.05$
+
+Thus with significance level of $5%$ we **can't say that prices have changed** in this time.
+
+### ii) Repeat everything on $z_i$
+
+$$ z_i = x_i - y_i $$
+
+$$ \bar{z_i} = \bar{x_i}-\bar{y_i} $$
+ 
+```{r}
+z_i = x_i - y_i
+
+denum = sqrt(var(z_i) / length(z_i))
+
+p_value = pt(q = mean(z_i) / denum , df = length(z_i) - 1, lower.tail = T)
+
+print(paste("mean(z_i) = ", round(mean(z_i), 2),"var(z_i) = ", round(var(z_i), 2) ))
+
+print(paste("P_value =", round(p_value,5)))
+```
+
+still with a threshold of $0.05$ for $P_{value}$ we fail to reject to null hypothesis since $P_{value} > 0.05$
+
+Thus with significance level of $5%$ we **can't say that prices have changed** in this time. Actually $P_{value}$ has increased!
+
+### iii) which is better? ii or i?
+
+Looking at the variance in both parts, we have much less variance in part ii, however in part i, $x_i$ and $y_i$ have large variances each. Thus we have a narrower curve in part ii, which results in more accurate results. Here the increase in P-value in part ii shows that, in part ii the fact that null hypothesis can't be rejected becomes more certain. When we pair data before analyzing, we don't merge the data of districts and that reduces error. 
